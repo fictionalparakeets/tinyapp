@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
 
-const urlDatabase = {
+let urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
@@ -20,7 +20,7 @@ function generateRandomString() {
     const randomValTo36 = Math.random().toString(randomValue).substr(2, 6);
     string += randomValTo36;
   }
-  return randomValTo36
+  return string;
 };
 
 // Pages
@@ -40,9 +40,16 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  // RAW = longURL=test.com%2Ftest22
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  const generatedShort = generateRandomString();
+  const receivedLongURL = req.body.longURL;
+  urlDatabase[generatedShort] = receivedLongURL;
+  res.redirect(`urls/${generatedShort}`);
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  console.log(longURL);
+  res.redirect(longURL);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -50,12 +57,10 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render('pages/urls_show', templateVarsTwo);
 });
 
-console.log(generateRandomString);
-console.log(generateRandomString);
-console.log(generateRandomString);
-console.log(generateRandomString);
-console.log(generateRandomString);
-console.log(generateRandomString);
+
+
+
+
 
 
 
