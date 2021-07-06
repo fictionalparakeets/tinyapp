@@ -4,12 +4,14 @@ const PORT = 8080; // default port 8080
 app.set('view engine', 'ejs');
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
+const cookieParser = require('cookie-parser')
+app.use(cookieParser());
 
 let urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
 
 
 // Helper function to generate random strings for short URLs
@@ -25,26 +27,37 @@ function generateRandomString() {
 
 // Pages Render - Index
 app.get("/", (req, res) => {
-  res.render('pages/index');
+  const templateVars = { 
+    username: req.cookies["username"]
+  };
+  res.render('pages/index', templateVars);
 });
 
 // Pages Render - URL Index (full database)
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { 
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
   res.render('pages/urls_index', templateVars);
 });
 
 // Pages Render - Create a new URL
 app.get("/urls/new", (req, res) => {
-  // data from input field =  req.body.longURL 
-  // const templateVarsThree = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render('pages/urls_new');
+  const templateVars = { 
+    username: req.cookies["username"]
+  };
+  res.render('pages/urls_new', templateVars);
 });
 
 // Pages Render - Detail for each URL in the database
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVarsTwo = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render('pages/urls_show', templateVarsTwo);
+  const templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies["username"]
+  };
+  res.render('pages/urls_show', templateVars);
 });
 
 // Method for directing to the longURL website when a shortURL is entered in address "/u/shortURL"
@@ -71,13 +84,21 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // Method for updating URLs from urls_show.ejs
 app.post("/urls/:id", (req, res) => {
-  // console.log('req.params.id: ', req.params.id)
-  // console.log('req.params.originalURL: ', req.params.originalURL);
   urlDatabase[req.params.id] = req.body.originalURL;
   res.redirect('/urls');
 });
 
+// Method for logging in (receiving username from text input field)
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect('/urls');
+});
 
+// Method for logging out
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
+});
 
 
 app.listen(PORT, () => {
