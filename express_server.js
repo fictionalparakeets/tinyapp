@@ -62,9 +62,9 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 
 // Method for updating URLs from urls_show.ejs
-app.post("/urls/:id/edit", (req, res) => {
-  urlDatabase[req.params.id] = req.params.longURL;
-  res.redirect('/pages/urls_index');
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.params.originalURL;
+  res.redirect('/urls');
 });
 
 
