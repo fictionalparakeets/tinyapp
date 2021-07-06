@@ -39,6 +39,13 @@ app.get("/urls/new", (req, res) => {
   res.render('pages/urls_new');
 });
 
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  console.log(longURL);
+  res.redirect(longURL);
+});
+
+// Method for posting new URL to urlDatabase
 app.post("/urls", (req, res) => {
   const generatedShort = generateRandomString();
   const receivedLongURL = req.body.longURL;
@@ -50,14 +57,16 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURLToDelete = req.params.shortURL;
   delete urlDatabase[shortURLToDelete];
-  res.redirect('/urls');
+  res.redirect('urls');
 });
 
-app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  console.log(longURL);
-  res.redirect(longURL);
+
+// Method for updating URLs from urls_show.ejs
+app.post("/urls/:id/edit", (req, res) => {
+  urlDatabase[req.params.id] = req.params.longURL;
+  res.redirect('/pages/urls_index');
 });
+
 
 app.get("/urls/:shortURL", (req, res) => {
   const templateVarsTwo = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
