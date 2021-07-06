@@ -23,22 +23,31 @@ function generateRandomString() {
   return string;
 };
 
-// Pages
+// Pages Render - Index
 app.get("/", (req, res) => {
   res.render('pages/index');
 });
 
+// Pages Render - URL Index (full database)
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render('pages/urls_index', templateVars);
 });
 
+// Pages Render - Create a new URL
 app.get("/urls/new", (req, res) => {
   // data from input field =  req.body.longURL 
   // const templateVarsThree = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render('pages/urls_new');
 });
 
+// Pages Render - Detail for each URL in the database
+app.get("/urls/:shortURL", (req, res) => {
+  const templateVarsTwo = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  res.render('pages/urls_show', templateVarsTwo);
+});
+
+// Method for directing to the longURL website when a shortURL is entered in address "/u/shortURL"
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   console.log(longURL);
@@ -60,25 +69,13 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('urls');
 });
 
-
 // Method for updating URLs from urls_show.ejs
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.params.originalURL;
+  // console.log('req.params.id: ', req.params.id)
+  // console.log('req.params.originalURL: ', req.params.originalURL);
+  urlDatabase[req.params.id] = req.body.originalURL;
   res.redirect('/urls');
 });
-
-
-app.get("/urls/:shortURL", (req, res) => {
-  const templateVarsTwo = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render('pages/urls_show', templateVarsTwo);
-});
-
-
-
-
-
-
-
 
 
 
