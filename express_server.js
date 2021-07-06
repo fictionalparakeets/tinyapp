@@ -46,6 +46,13 @@ app.post("/urls", (req, res) => {
   res.redirect(`urls/${generatedShort}`);
 });
 
+// Method for deleting URLs from urls_index.ejs
+app.post("/urls/:shortURL/delete", (req, res) => {
+  const shortURLToDelete = req.params.shortURL;
+  delete urlDatabase[shortURLToDelete];
+  res.redirect('/urls');
+});
+
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   console.log(longURL);
