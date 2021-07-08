@@ -12,20 +12,14 @@
     <%- include('../partials/_header'); %>
   </header>
 
-  <h6>Login!</h6>
+  <h6>Sign Up!</h6>
 
-  <form method="POST" action="/login">
+  <form method="POST" action="/register">
     <input type="email" name="email" placeholder="email" required />
     <br>
     <input type="password" name="password" placeholder="password" />
-    <button type="submit">Login</button>
-  </form> 
-
-
-  <h6>Don't have an account?</h6>
-  <button onclick="window.location.href='/register';">Register</button>
-
-
+    <button type="submit">Register</button>
+  </form>  
 
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
