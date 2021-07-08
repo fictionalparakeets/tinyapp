@@ -10,24 +10,41 @@ app.use(bodyParser.urlencoded({extended: true}));
 const cookieParser = require('cookie-parser')
 app.use(cookieParser());
 
+const bcrypt = require('bcrypt');
+const salt = bcrypt.genSaltSync(10);
 
 
 
 let urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "HISFEA"
+  },
+  "sgq3y6": {
+    longURL: "http://www.google.com",
+    userID: "HISFEA"
+  },
+  "H2xV4w": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "A5674F"
+  },
+  "w4xV2H": {
+    longURL: "http://www.google.ca",
+    userID: "A5674F"
+  }
 };
+
 
 const users = {
   "HISFEA": {
     id: "HISFEA", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("1234", salt)
   },
  "A5674F": {
     id: "A5674F", 
     email: "user2@example.com", 
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("1234", salt)
   }
 };
 
@@ -43,7 +60,18 @@ function generateRandomString() {
   return string;
 };
 
+// Helper function to iterate over urls database and return each user's collection of urls
+const getUserDatabaseByUser = function(userIDInput) {
+  const usersURLs = {};
+  for (const shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === userIDInput) {
+      usersURLs[shortURL] = urlDatabase[shortURL].longURL;
+    }
+  }
+  return usersURLs;
+};
 
+// Helper functions for authenticating users
 const getUserObjectByEmail = function(enteredEmail) {
   for (const userInDatabase in users) {
     if (enteredEmail === users[userInDatabase].email) {
@@ -56,20 +84,38 @@ const getUserObjectByEmail = function(enteredEmail) {
 
 // return the existing user object in users, based on cookie's 'user_id'
 // Should this exist?
-const getUserObjectByCookie = function(cookieID) {
-  for (const userInDatabase in users) {
-    if (cookieID === users[userInDatabase]) {
-      return users[userInDatabase];
-    }
-  }
-};
+// const getUserObjectByCookie = function(cookieID) {
+//   for (const userInDatabase in users) {
+//     if (cookieID === users[userInDatabase]) {
+//       return users[userInDatabase];
+//     }
+//   }
+// };
 
+
+// Validate email and password inputs
+const validateInputs = function(enteredEmail, enteredPassword) {
+  //
+  if (!enteredEmail || !enteredPassword) {
+    console.log('something is entered incorrectly');
+    // TO DO: pass an object for registration page html to render and incorrect entry
+    // CHANGE THIS TO A COOKIE
+    return false;
+    // return res.status(403).send('Error. Please Try Again');
+  }
+  return true
+}
+
+
+// Helper functions for authenticating users
 const userAuthenticated = function(enteredEmail, enteredPassword) {
-  let userObject = getUserObjectByEmail(enteredEmail);
+  const userObject = getUserObjectByEmail(enteredEmail);
+  const hashedPassword = bcrypt.hashSync(enteredPassword, salt);
+  const passwordsMatch = bcrypt.compareSync(enteredPassword, hashedPassword);
   if (userObject) {
-    if (enteredPassword === userObject.password) {
+    if (passwordsMatch) {
       console.log("password match for entered email");
-      return userObject;
+      return true;
     }
   }
   return false;
@@ -90,8 +136,9 @@ app.get("/urls", (req, res) => {
   if (!user) {
     return res.render('pages/login_page', { user });
   }
+  const usersURLs = getUserDatabaseByUser(user.id);
   const templateVars = { 
-    urls: urlDatabase,
+    urls: usersURLs,
     user: user
   };
   res.render('pages/urls_index', templateVars);  
@@ -109,9 +156,10 @@ app.get("/urls/new", (req, res) => {
 // Pages Render - Detail for each URL in the database
 app.get("/urls/:shortURL", (req, res) => {
   const user = users[req.cookies.user_id];
+  const usersURLs = getUserDatabaseByUser(user.id);
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: usersURLs[req.params.shortURL],
     user: user
   };
   res.render('pages/urls_show', templateVars);
@@ -131,31 +179,51 @@ app.get("/login", (req, res) => {
 
 // Method for directing to the longURL website when a shortURL is entered in address "/u/shortURL"
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
 
 // POSTS
-// Method for posting new URL to urlDatabase
+// Method for posting new URL to 
 app.post("/urls", (req, res) => {
   const generatedShort = generateRandomString();
   const receivedLongURL = req.body.longURL;
-  urlDatabase[generatedShort] = receivedLongURL;
+  urlDatabase[generatedShort] = {
+    longURL: receivedLongURL,
+    userID: generatedShort
+  }
   res.redirect(`urls/${generatedShort}`);
 });
 
+// for testing: http://localhost:8080/u/sgq3y6
 // Method for deleting URLs from urls_index.ejs
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const shortURLToDelete = req.params.shortURL;
-  delete urlDatabase[shortURLToDelete];
-  res.redirect('urls');
+  const user = users[req.cookies.user_id];
+  if (user) {
+    const usersURLs = getUserDatabaseByUser(user.id);
+    const shortURLToDelete = req.params.shortURL;
+    if (usersURLs[shortURLToDelete]) {
+      delete urlDatabase[shortURLToDelete];
+      return res.redirect('urls');
+    }
+  }
+  return res.status(403).send('URL requested for deletion not found in your account');
 });
 
 // Method for updating URLs from urls_show.ejs
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.originalURL;
-  res.redirect('/urls');
+  res.redirect('/urls');  
+  const user = users[req.cookies.user_id];
+  if (user) {
+    const usersURLs = getUserDatabaseByUser(user.id);
+    const shortURLToEdit = req.params.id;
+    if (usersURLs[shortURLToEdit]) {
+      urlDatabase[shortURLToEdit].longURL = req.body.originalURL;
+      return res.redirect('/urls');
+    }
+  }
+  return res.status(403).send('URL requested for deletion not found in your account');
 });
 
 // Method for logging out
@@ -164,20 +232,16 @@ app.post("/logout", (req, res) => {
   res.redirect('/');
 });
 
-// Break out the entry validation to a separate function, call it in the login and register methods
-const validateInput = function(enteredEmail, enteredPassword) {
-  //
-}
-
-
 // Method for logging in (receiving email and password from text input fields in _header.ejs)
 app.post("/login", (req, res) => {
   const enteredEmail = req.body.email;
   const enteredPassword = req.body.password;
-
+  // const { enteredEmail, enteredPassword } = req.body;
+  console.log(enteredEmail);
+  const hashedPassword = bcrypt.hashSync(req.body.password, salt);
   let userObject = userAuthenticated(enteredEmail, enteredPassword);
   if (userObject) {
-    res.cookie("user_id", userObject.id);
+    // res.cookie("user_id", userObject.id);
     return res.redirect('/urls')
   }
   // if not authenticated throw a 403 error
@@ -188,20 +252,20 @@ app.post("/login", (req, res) => {
 app.post("/register", (req, res) => {
   const enteredEmail = req.body.email;
   const enteredPassword = req.body.password;
-
+  const hashedPassword = bcrypt.hashSync(enteredPassword, salt);
   // validate email and password entries. if not valid, redirect to registration page again
-  if (!enteredEmail || !enteredPassword) {
-    console.log('something is entered incorrectly');
+  if (!validateInputs(enteredEmail, enteredPassword)) {
+    console.log('Please try again');
     // TO DO: pass an object for registration page html to render and incorrect entry
+    // CHANGE TO If incorrect entry cookie, send error
     return res.status(403).send('Error. Please Try Again');
   }
   
+  const userObject = getUserObjectByEmail(enteredEmail);
+  const userID = userObject.id;
   // Authenticate User:
-  const userObjectByEmail = getUserObjectByEmail(enteredEmail);
-  const userID = userObjectByEmail.id;
-
-  if (userObjectByEmail) {
-    if (userObjectByEmail.password === enteredPassword) {
+  if (userObject) {
+    if (passwordsMatch) {
       console.log('password matches email');
       // set cookies with existing userID
       res.cookie("user_id", userID);
@@ -209,7 +273,7 @@ app.post("/register", (req, res) => {
       // return and redirect to /urls
       return res.redirect('/urls')     
     }
-    // CHANGE THIS TO NOT SPECIFY EMAIL
+    // CHANGE THIS TO SET A COOKIE
     res.status(403).send('Account already exists');
     return res.redirect('/login');
   }
@@ -219,16 +283,17 @@ app.post("/register", (req, res) => {
   // if user doesn't exist in the database, create a new cookie and create a new user object in database
     // new cookie:
   const userRandomID = generateRandomString();
-  res.cookie("user_id", userRandomID);
+  // res.cookie("user_id", userRandomID);
     // create a database entry
-  let userObjectFromDatabase = {
+  let userToAdd = {
     id: userRandomID, 
     email: enteredEmail, 
-    password: enteredPassword
+    password: hashedPassword
   }
     // add object to database
-  users[userRandomID] = userObjectFromDatabase;
+  users[userRandomID] = userToAdd;
   console.log('no match in database, created a new user');
+  console.log(userToAdd);
     // redirect to urls
   res.redirect('/urls');
   

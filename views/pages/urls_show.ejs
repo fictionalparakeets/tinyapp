@@ -20,9 +20,9 @@
       </div>
 
       <form method="POST" action="/urls/<%= shortURL %>">
-        <label>Original URL</label>
-        <input type="text" name="originalURL" />
-        <button type="submit">Edit Original URL</button>
+        <label>New URL to shorten to <%= shortURL %>:</label>
+        <input type="text" name="originalURL" placeholder="http://"/>
+        <button type="submit">Edit Stored URL</button>
       </form>  
 
     <div class="card-footer text-muted"></div>
