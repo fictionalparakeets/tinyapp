@@ -24,7 +24,7 @@ app.use(cookieSession({
   keys: ["tinySecret", "longSecret"]
 }));
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const salt = bcrypt.genSaltSync(10);
 
 app.listen(PORT, () => {
@@ -87,7 +87,8 @@ app.get("/urls", (req, res) => {
     };
     return res.render('pages/urls_index', templateVars);
   }
-  res.render('pages/login_page');
+  console.log('here');
+  res.render('pages/login_page', { userObject });
 });
 
 // Pages Render - Create a new URL
@@ -98,7 +99,7 @@ app.get("/urls/new", (req, res) => {
     const templateVars = { user: userObject.email };
     return res.render('pages/urls_new', templateVars);
   }
-  res.render('pages/login_page');
+  res.render('pages/login_page', { userObject });
 });
 
 // Pages Render - Detail for each URL in the database
@@ -120,7 +121,7 @@ app.get("/urls/:shortURL", (req, res) => {
     }
     return res.status(403).send('URL does not exist in your account. Sorry');
   }
-  res.render('pages/login_page');
+  res.render('pages/login_page', { userObject });
 });
 
 // Pages Render - Registration - on page 'registration.ejs'
@@ -212,16 +213,19 @@ app.post("/logout", (req, res) => {
 app.post("/login", (req, res) => {
   const enteredEmail = req.body.email;
   const enteredPassword = req.body.password;
-  const databasePassword = getUserByEmail(enteredEmail, users).password;
-  const authenticated = userAuthenticated(enteredPassword, databasePassword);
-  // validate inputs
-  if (!enteredEmail || !enteredPassword) {
-    return res.redirect('/login');
-  }
-  // you're authenticated. you get a cookie!
-  if (authenticated) {
-    req.session.user_id = enteredEmail;
-    return res.redirect('/urls');
+  const user = getUserByEmail(enteredEmail, users);
+  const databasePassword = user.password;
+  if (user) {
+    const authenticated = userAuthenticated(enteredPassword, databasePassword);
+    // validate inputs
+    if (!enteredEmail || !enteredPassword) {
+      return res.redirect('/login');
+    }
+    // you're authenticated. you get a cookie!
+    if (authenticated) {
+      req.session.user_id = enteredEmail;
+      return res.redirect('/urls');
+    }
   }
   res.status(403).send('Error. Please try logging in again.');
 });

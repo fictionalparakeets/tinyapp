@@ -1,4 +1,5 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
+
 
 // Helper function to generate random strings for short URLs
 const generateRandomString = function() {
@@ -33,10 +34,9 @@ const getUserByEmail = function(enteredEmail, database) {
 };
 
 // Helper functions for authenticating users
-const userAuthenticated = function(enteredPassword, databasePassword) {
-  const passwordsMatch = bcrypt.compareSync(enteredPassword, databasePassword);
+const userAuthenticated = function(enteredHashedPassword, databasePassword) {
+  const passwordsMatch = bcrypt.compareSync(enteredHashedPassword, databasePassword);
   if (passwordsMatch) {
-    // res.cookie(error) ? res.clearCookie(error) : null;
     return true;
   }
   return false;
