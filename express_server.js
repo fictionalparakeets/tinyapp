@@ -98,7 +98,7 @@ app.get("/urls", (req, res) => {
     return res.render('pages/urls_index', templateVars);  
   }
   // res.cookie(error, "That's an error");
-  res.redirect('/login');
+  res.render('pages/login_page');
 });
 
 // Pages Render - Create a new URL
@@ -106,10 +106,11 @@ app.get("/urls/new", (req, res) => {
   const userEmail = req.session.user_id;
   const userObject = getUserByEmail(userEmail, users);
   if (userObject) {
-    return res.render('pages/urls_new', { userObject });
+    const templateVars = { user: userObject.email };
+    return res.render('pages/urls_new', templateVars);
   }
   // res.cookie(error, "That's an error");
-  res.redirect('/login');
+  res.render('pages/login_page');
 });
 
 // Pages Render - Detail for each URL in the database
@@ -119,22 +120,30 @@ app.get("/urls/:shortURL", (req, res) => {
   if (userObject) {
     const usersURLs = getDatabaseObjectByUserID(userObject.id, urlDatabase);
     const shortURL = req.params.shortURL;
-    const longURL = usersURLs[shortURL].longURL;
-    const templateVars = {
-      shortURL: shortURL,
-      longURL: longURL,
-      user: userObject.id
-    };
-    return res.render('pages/urls_show', templateVars);
+    if (usersURLs[shortURL]) {
+
+      const longURL = usersURLs[shortURL].longURL;
+      const templateVars = {
+        shortURL: shortURL,
+        longURL: longURL,
+        user: userObject.id
+      };
+      return res.render('pages/urls_show', templateVars);
+    }
+    return res.status(403).send('URL does not exist in your account. Sorry');
   }
   // res.cookie(error, "That's an error");
-  res.redirect('/login');
+  res.render('pages/login_page');
 });
 
 // Pages Render - Registration Page - on page 'registration.ejs'
 app.get("/register", (req, res) => {
   const userEmail = req.session.user_id;
+  console.log('loggedIn: ', userEmail);
   const userObject = getUserByEmail(userEmail, users);
+  if (userEmail) {
+    return res.status(418).send('You\'re already logged in!');
+  }
   res.render('pages/registration', { userObject });
 });
 
@@ -142,13 +151,20 @@ app.get("/register", (req, res) => {
 app.get("/login", (req, res) => {
   const userEmail = req.session.user_id;
   const userObject = getUserByEmail(userEmail, users);
+  if (userEmail) {
+    return res.status(418).send('You\'re already logged in!');
+  }
   res.render('pages/login_page', { userObject });
 });
 
 // Method for directing to the longURL website when a shortURL is entered in address "/u/shortURL"
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
+  const databaseURLEntry = urlDatabase[req.params.shortURL];
+  if (databaseURLEntry) {
+    const longURL = databaseURLEntry.longURL;
+    return res.redirect(longURL);
+  }
+  res.status(404).send('URL does not exist. Sorry');
 });
 
 // POSTS
@@ -173,15 +189,16 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userEmail = req.session.user_id;
   const userObject = getUserByEmail(userEmail, users);
+  // console.log(userObject);
   if (userObject) {
-    const usersURLs = getDatabaseObjectByUserID(userObject.id, users);
+    const usersURLs = getDatabaseObjectByUserID(userObject.id, urlDatabase);
     const shortURLToDelete = req.params.shortURL;
     if (usersURLs[shortURLToDelete]) {
       delete urlDatabase[shortURLToDelete];
-      return res.redirect('urls');
+      return res.redirect('/urls');  ///////HERE
     }
   }
-  res.status(403).send('URL requested for deletion not found in your account');
+  res.status(404).send('URL requested for deletion not found in your account');
   // res.redirect('/login');
 });
 
@@ -197,7 +214,7 @@ app.post("/urls/:id", (req, res) => {
       return res.redirect('/urls');
     }
   }
-  res.status(403).send('URL requested for edit not found in your account');
+  res.status(404).send('URL requested for edit not found in your account');
   // res.redirect('/login');
 });
 
@@ -215,16 +232,14 @@ app.post("/login", (req, res) => {
   const authenticated = userAuthenticated(enteredPassword, databasePassword);
   if (!enteredEmail || !enteredPassword) {
     // res.cookie(error, "That's an error");
-    return res.status(403).send('Error. Please Try Again FIRST');
+    return res.redirect('/login');
   }
   if (authenticated) {
     req.session.user_id = enteredEmail;
     return res.redirect('/urls')
   }
-  // if not authenticated throw a 403 error
     // res.cookie(error, "That's an error");
-  res.status(403).send('Error. Please Try Again SECOND');
-  // res.redirect('/login');
+  res.status(403).send('Error. Please try logging in again.');
 });
 
 // Method for registering - on page 'login_page.ejs'
@@ -233,15 +248,14 @@ app.post("/register", (req, res) => {
   const enteredPassword = req.body.password;
   const hashedPassword = bcrypt.hashSync(enteredPassword, salt);
   // validate email and password entries. if not valid, redirect to registration page again
-  if (!validateInputs(enteredEmail, enteredPassword)) {
+  if (!enteredEmail || !enteredPassword) {
     // res.cookie(error, "That's an error");
     return res.status(403).send('Error. Please Try Again');
   }
 
   // Test for user already existing, redirect to login
-  if (doesEmailExist) {
-    res.status(403).send('Account already exists');
-    return res.redirect('/login');
+  if (doesEmailExist(enteredEmail)) {
+    return res.status(403).send('Account already exists. Please login instead');
   }
 
   // if user doesn't exist in the database, create a new cookie and create a new user object in database

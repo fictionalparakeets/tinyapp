@@ -32,12 +32,6 @@ const getUserByEmail = function(enteredEmail, database) {
   return false;
 };
 
-// Validate email and password inputs
-const validateInputs = function(enteredEmail, enteredPassword) {
-  const truthy = (!enteredEmail || !enteredPassword) ? true : false;
-  return truthy;
-};
-
 // Helper functions for authenticating users
 const userAuthenticated = function(enteredPassword, databasePassword) {
   const passwordsMatch = bcrypt.compareSync(enteredPassword, databasePassword);
@@ -49,14 +43,14 @@ const userAuthenticated = function(enteredPassword, databasePassword) {
 };
 
 const doesEmailExist = function(enteredEmail, database) {
-  return (!getUserByEmail(enteredEmail, database));
+  const truthy = getUserByEmail(enteredEmail, database) ? true : false;
+  return (truthy);
 };
 
 module.exports = {
   generateRandomString,
   getDatabaseObjectByUserID,
   getUserByEmail,
-  validateInputs,
   userAuthenticated,
   doesEmailExist
 };
