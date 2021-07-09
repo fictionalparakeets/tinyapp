@@ -63,16 +63,6 @@ const users = {
   }
 };
 
-// Middleware route for logged in versus strangers
-// app.use('/', (req, res, next) => {
-//   const userObject = getUserByEmail(req.session.user_id, users);
-//   const approvedPaths = ['/', '/login', '/register'];
-//   if (userObject || approvedPaths.includes(req.path)) {
-//     return next;
-//   }
-//   res.redirect('/');
-// });
-
 // PAGES
 // Pages Render - Index
 app.get("/", (req, res) => {
@@ -97,7 +87,6 @@ app.get("/urls", (req, res) => {
     };
     return res.render('pages/urls_index', templateVars);  
   }
-  // res.cookie(error, "That's an error");
   res.render('pages/login_page');
 });
 
@@ -109,7 +98,6 @@ app.get("/urls/new", (req, res) => {
     const templateVars = { user: userObject.email };
     return res.render('pages/urls_new', templateVars);
   }
-  // res.cookie(error, "That's an error");
   res.render('pages/login_page');
 });
 
@@ -120,8 +108,8 @@ app.get("/urls/:shortURL", (req, res) => {
   if (userObject) {
     const usersURLs = getDatabaseObjectByUserID(userObject.id, urlDatabase);
     const shortURL = req.params.shortURL;
+    // check if url belongs to user
     if (usersURLs[shortURL]) {
-
       const longURL = usersURLs[shortURL].longURL;
       const templateVars = {
         shortURL: shortURL,
@@ -132,11 +120,10 @@ app.get("/urls/:shortURL", (req, res) => {
     }
     return res.status(403).send('URL does not exist in your account. Sorry');
   }
-  // res.cookie(error, "That's an error");
   res.render('pages/login_page');
 });
 
-// Pages Render - Registration Page - on page 'registration.ejs'
+// Pages Render - Registration - on page 'registration.ejs'
 app.get("/register", (req, res) => {
   const userEmail = req.session.user_id;
   console.log('loggedIn: ', userEmail);
@@ -147,7 +134,7 @@ app.get("/register", (req, res) => {
   res.render('pages/registration', { userObject });
 });
 
-// Pages Render - Login Page - on page 'login_page.ejs'
+// Pages Render - Login - on page 'login_page.ejs'
 app.get("/login", (req, res) => {
   const userEmail = req.session.user_id;
   const userObject = getUserByEmail(userEmail, users);
@@ -181,7 +168,6 @@ app.post("/urls", (req, res) => {
     }
     return res.redirect(`urls/${generatedShort}`);
   }
-  // res.cookie(error, "That's an error");
   res.redirect('/login');
 });
 
@@ -189,17 +175,16 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userEmail = req.session.user_id;
   const userObject = getUserByEmail(userEmail, users);
-  // console.log(userObject);
   if (userObject) {
     const usersURLs = getDatabaseObjectByUserID(userObject.id, urlDatabase);
     const shortURLToDelete = req.params.shortURL;
+    // check to make sure user owns the url to delete
     if (usersURLs[shortURLToDelete]) {
       delete urlDatabase[shortURLToDelete];
-      return res.redirect('/urls');  ///////HERE
+      return res.redirect('/urls');
     }
   }
   res.status(404).send('URL requested for deletion not found in your account');
-  // res.redirect('/login');
 });
 
 // Method for updating URLs from urls_show.ejs
@@ -209,13 +194,13 @@ app.post("/urls/:id", (req, res) => {
   if (userObject) {
     const usersURLs = getDatabaseObjectByUserID(userObject.id, urlDatabase);
     const shortURLToEdit = req.params.id;
+    // check to make sure user owns the url to edit
     if (usersURLs[shortURLToEdit]) {
       urlDatabase[shortURLToEdit].longURL = req.body.originalURL;
       return res.redirect('/urls');
     }
   }
   res.status(404).send('URL requested for edit not found in your account');
-  // res.redirect('/login');
 });
 
 // Method for logging out
@@ -230,15 +215,15 @@ app.post("/login", (req, res) => {
   const enteredPassword = req.body.password;
   const databasePassword = getUserByEmail(enteredEmail, users).password;
   const authenticated = userAuthenticated(enteredPassword, databasePassword);
+  // validate inputs
   if (!enteredEmail || !enteredPassword) {
-    // res.cookie(error, "That's an error");
     return res.redirect('/login');
   }
+  // you're authenticated. you get a cookie!
   if (authenticated) {
     req.session.user_id = enteredEmail;
     return res.redirect('/urls')
   }
-    // res.cookie(error, "That's an error");
   res.status(403).send('Error. Please try logging in again.');
 });
 
@@ -247,18 +232,15 @@ app.post("/register", (req, res) => {
   const enteredEmail = req.body.email;
   const enteredPassword = req.body.password;
   const hashedPassword = bcrypt.hashSync(enteredPassword, salt);
-  // validate email and password entries. if not valid, redirect to registration page again
+  // validate inputs
   if (!enteredEmail || !enteredPassword) {
-    // res.cookie(error, "That's an error");
     return res.status(403).send('Error. Please Try Again');
   }
-
-  // Test for user already existing, redirect to login
+  // check for existing email in database
   if (doesEmailExist(enteredEmail)) {
     return res.status(403).send('Account already exists. Please login instead');
   }
-
-  // if user doesn't exist in the database, create a new cookie and create a new user object in database
+  // user doesn't exist. create a new cookie and create a new user object in database
   const userRandomID = generateRandomString();
   req.session.user_id = enteredEmail;
   users[userRandomID] = {
