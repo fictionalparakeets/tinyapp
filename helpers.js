@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 
 // Helper function to generate random strings for short URLs
-function generateRandomString() {
+const generateRandomString = function() {
   let string = '';
   while (string.length < 6) {
     const randomValue = Math.floor(Math.random() * 34) + 2;

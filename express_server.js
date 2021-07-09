@@ -15,7 +15,7 @@ app.set('view engine', 'ejs');
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
 const cookieSession = require('cookie-session');
@@ -52,13 +52,13 @@ const urlDatabase = {
 
 const users = {
   "HISFEA": {
-    id: "HISFEA", 
-    email: "user@example.com", 
+    id: "HISFEA",
+    email: "user@example.com",
     password: bcrypt.hashSync("1234", salt)
   },
- "A5674F": {
-    id: "A5674F", 
-    email: "user2@example.com", 
+  "A5674F": {
+    id: "A5674F",
+    email: "user2@example.com",
     password: bcrypt.hashSync("1234", salt)
   }
 };
@@ -81,11 +81,11 @@ app.get("/urls", (req, res) => {
   const userObject = getUserByEmail(userEmail, users);
   if (userObject) {
     const usersURLs = getDatabaseObjectByUserID(userObject.id, urlDatabase);
-    const templateVars = { 
+    const templateVars = {
       urls: usersURLs,
       user: userObject.email
     };
-    return res.render('pages/urls_index', templateVars);  
+    return res.render('pages/urls_index', templateVars);
   }
   res.render('pages/login_page');
 });
@@ -114,7 +114,7 @@ app.get("/urls/:shortURL", (req, res) => {
       const templateVars = {
         shortURL: shortURL,
         longURL: longURL,
-        user: userObject.id
+        user: userObject.email
       };
       return res.render('pages/urls_show', templateVars);
     }
@@ -126,7 +126,6 @@ app.get("/urls/:shortURL", (req, res) => {
 // Pages Render - Registration - on page 'registration.ejs'
 app.get("/register", (req, res) => {
   const userEmail = req.session.user_id;
-  console.log('loggedIn: ', userEmail);
   const userObject = getUserByEmail(userEmail, users);
   if (userEmail) {
     return res.status(418).send('You\'re already logged in!');
@@ -155,7 +154,7 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 // POSTS
-// Method for posting new URL to 
+// Method for posting new URL to user's account
 app.post("/urls", (req, res) => {
   const userEmail = req.session.user_id;
   const userObject = getUserByEmail(userEmail, users);
@@ -165,7 +164,7 @@ app.post("/urls", (req, res) => {
     urlDatabase[generatedShort] = {
       longURL: receivedLongURL,
       id: userObject.id
-    }
+    };
     return res.redirect(`urls/${generatedShort}`);
   }
   res.redirect('/login');
@@ -222,7 +221,7 @@ app.post("/login", (req, res) => {
   // you're authenticated. you get a cookie!
   if (authenticated) {
     req.session.user_id = enteredEmail;
-    return res.redirect('/urls')
+    return res.redirect('/urls');
   }
   res.status(403).send('Error. Please try logging in again.');
 });
@@ -244,9 +243,9 @@ app.post("/register", (req, res) => {
   const userRandomID = generateRandomString();
   req.session.user_id = enteredEmail;
   users[userRandomID] = {
-    id: userRandomID, 
-    email: enteredEmail, 
+    id: userRandomID,
+    email: enteredEmail,
     password: hashedPassword
-  }
+  };
   res.redirect('/urls');
 });
