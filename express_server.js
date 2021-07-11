@@ -1,3 +1,8 @@
+const express = require("express");
+const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
+const bcrypt = require('bcryptjs');
 const {
   generateRandomString,
   getDatabaseObjectByUserID,
@@ -6,26 +11,17 @@ const {
   doesEmailExist
 } = require('./helpers');
 
-const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
+const salt = bcrypt.genSaltSync(10);
 
 app.set('view engine', 'ejs');
-
-const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
-const cookieParser = require('cookie-parser');
 app.use(cookieParser());
-
-const cookieSession = require('cookie-session');
 app.use(cookieSession({
   name: 'session',
   keys: ["tinySecret", "longSecret"]
 }));
-
-const bcrypt = require('bcryptjs');
-const salt = bcrypt.genSaltSync(10);
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
@@ -71,8 +67,8 @@ app.get("/", (req, res) => {
   if (userObject) {
     return res.render('pages/index', { userObject });
   }
-  // is this next line necessary?
-  res.render('pages/index', { userObject });
+  // if user is not logged in: redirect to /login
+  res.render('pages/login_page', { userObject });
 });
 
 // Pages Render - URL Index (full database)
@@ -87,8 +83,8 @@ app.get("/urls", (req, res) => {
     };
     return res.render('pages/urls_index', templateVars);
   }
-  console.log('here');
-  res.render('pages/login_page', { userObject });
+  // if user is not logged in: returns HTML with a relevant error message instead of rendering login page
+  res.status(403).send('You must be logged in to access this page.');
 });
 
 // Pages Render - Create a new URL
@@ -121,7 +117,8 @@ app.get("/urls/:shortURL", (req, res) => {
     }
     return res.status(403).send('URL does not exist in your account. Sorry');
   }
-  res.render('pages/login_page', { userObject });
+  // if user is not logged in: returns HTML with a relevant error message
+  res.status(403).send('You must be logged in to access this page.');
 });
 
 // Pages Render - Registration - on page 'registration.ejs'
@@ -168,7 +165,8 @@ app.post("/urls", (req, res) => {
     };
     return res.redirect(`urls/${generatedShort}`);
   }
-  res.redirect('/login');
+  // if user is not logged in: returns HTML with a relevant error message instead of redirecting to login page
+  res.status(403).send('You must be logged in to access this page.');
 });
 
 // Method for deleting URLs from urls_index.ejs
