@@ -43,8 +43,7 @@ const userAuthenticated = function(enteredHashedPassword, databasePassword) {
 };
 
 const doesEmailExist = function(enteredEmail, database) {
-  const truthy = getUserByEmail(enteredEmail, database) ? true : false;
-  return (truthy);
+  return getUserByEmail(enteredEmail, database);
 };
 
 module.exports = {
