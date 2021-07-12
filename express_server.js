@@ -266,12 +266,13 @@ app.post("/register", (req, res) => {
   const enteredEmail = req.body.email;
   const enteredPassword = req.body.password;
   const hashedPassword = bcrypt.hashSync(enteredPassword, salt);
+  const emailExists = doesEmailExist(enteredEmail, users);
 
   if (!enteredEmail || !enteredPassword) {
     return res.status(403).send('Error. Please input your email and choose a password.');
   }
 
-  if (doesEmailExist(enteredEmail, users)) {
+  if (emailExists) {
     return res.status(403).send('Account already exists. Please login instead');
   }
   
