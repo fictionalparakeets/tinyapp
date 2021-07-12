@@ -16,8 +16,8 @@
 
       </div>
     </div>
-        <% if (typeof user !== 'undefined') { %>
-              <h6 class="nav-item nav-link text-light" style="margin-right: 10px; margin-top: 10px;">Hello <%= user %></h6>
+        <% if (userObject) { %>
+              <h6 class="nav-item nav-link text-light" style="margin-right: 10px; margin-top: 10px;">Hello <%= userObject.email %></h6>
               
               <form method="POST" action="/logout">
                 <button class="btn btn-primary">Logout</button>

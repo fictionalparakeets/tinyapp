@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 
 
-// Helper function to generate random strings for short URLs
+// generate random strings for new short URLs
 const generateRandomString = function() {
   let string = '';
   while (string.length < 6) {
@@ -12,7 +12,6 @@ const generateRandomString = function() {
   return string;
 };
 
-// Helper function to iterate over urls database and return each user's collection of urls
 const getDatabaseObjectByUserID = function(userID, database) {
   const databaseObject = {};
   for (const objectKey in database) {
@@ -23,7 +22,6 @@ const getDatabaseObjectByUserID = function(userID, database) {
   return databaseObject;
 };
 
-// Helper functions for authenticating users // returns the user.id
 const getUserByEmail = function(enteredEmail, database) {
   for (const userInDatabase in database) {
     if (enteredEmail === database[userInDatabase].email) {
@@ -33,7 +31,6 @@ const getUserByEmail = function(enteredEmail, database) {
   return false;
 };
 
-// Helper functions for authenticating users
 const userAuthenticated = function(enteredHashedPassword, databasePassword) {
   const passwordsMatch = bcrypt.compareSync(enteredHashedPassword, databasePassword);
   if (passwordsMatch) {
